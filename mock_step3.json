@@ -1,0 +1,20 @@
+[
+  {
+    "type": "external",
+    "claim": "این مشکل معمولاً به دلیل خشکی پوست سر، نوعی اختلال در غدد چربی، یا واژگونی میکروبی به وجود می‌آید.",
+    "section": "شوره سر: یک مشکل شایع و دل‌سوز",
+    "keyword": "causes of dandruff scientific",
+    "searchQuery": "causes of dandruff scientific (site:.gov.ir OR site:.ac.ir OR site:.org.ir)",
+    "targetDomain": "iranian_validated",
+    "searchType": "external"
+  },
+  {
+    "type": "internal",
+    "claim": "عسل به عنوان یکی از محصولات طبیعی با خواص شگفت‌انگیز شناخته می‌شود.",
+    "section": "عسل: یک درمان طبیعی فوق‌العاده",
+    "keyword": "site:zarinhoney.com عسل طبیعی",
+    "searchQuery": "site:zarinhoney.com عسل طبیعی",
+    "targetDomain": "zarinhoney.com",
+    "searchType": "internal"
+  }
+]
