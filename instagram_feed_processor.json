@@ -40,6 +40,58 @@
     },
     {
       "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "code",
+              "name": "Code",
+              "value": "={{ $json.code }}",
+              "type": "string"
+            },
+            {
+              "id": "username",
+              "name": "Username",
+              "value": "={{ $json.username }}",
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "name": "Caption",
+              "value": "={{ $json.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "Post URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "Image URL",
+              "value": "={{ $json.image_url }}",
+              "type": "string"
+            },
+            {
+              "id": "video_url",
+              "name": "Video URL",
+              "value": "={{ $json.video_url }}",
+              "type": "string"
+            },
+            {
+              "id": "like_count",
+              "name": "Likes",
+              "value": "={{ $json.like_count }}",
+              "type": "number"
+            },
+            {
+              "id": "comment_count",
+              "name": "Comments",
+              "value": "={{ $json.comment_count }}",
+              "type": "number"
+            }
+          ]
+        },
         "options": {}
       },
       "id": "20f4c219-28dc-44e2-ac11-e6c8b4a1a22b",
