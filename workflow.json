@@ -1,0 +1,527 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📊 STEP 1: Analyze Content for Citations\n// ============================================\n\nconst inputData = $input.first().json;\n\n// Handle different input formats\nlet content = '';\nlet title = '';\n\n// Try to extract content from various formats\nif (inputData['choices[0].message.content']) {\n  // From Split Out node\n  content = inputData['choices[0].message.content'];\n} else if (inputData.content) {\n  content = inputData.content;\n} else if (inputData.body && inputData.body.content) {\n  // From Webhook body\n  content = inputData.body.content;\n} else if (inputData.choices && inputData.choices[0]) {\n  content = inputData.choices[0].message.content;\n}\n\n// Extract title\ntitle = inputData.title || inputData.originalTitle || (inputData.body && inputData.body.title) || '';\n\nif (!content) {\n  throw new Error('❌ No content provided');\n}\n\n// Extract main topics from H2/H3 headers\nconst headers = [...content.matchAll(/##\\s+(.+)/g)].map(m => m[1].trim());\n\n// Identify 10-11 citation opportunities (3-4 Internal + 7 External)\nconst opportunities = [];\n\n// Strategy 1: External Claims (Need scientific backing)\nconst externalPatterns = [\n  /تحقیقات نشان می‌دهد/g, /مطالعات علمی/g, /پژوهش‌ها/g, /آمار/g, /درصد/g,\n  /خواص درمانی/g, /ضد باکتری/g, /ضد التهاب/g, /تقویت سیستم ایمنی/g, /علمی/g\n];\n\n// Strategy 2: Internal Topics (Commercial/Product related)\nconst internalPatterns = [\n  /عسل/g, /ژل رویال/g, /بره موم/g, /گرده گل/g, /طبیعی/g, /ارگانیک/g, /خرید/g, /قیمت/g, /کیفیت/g\n];\n\nlet externalCount = 0;\nlet internalCount = 0;\n\n// Find sentences with claims\nconst sentences = content.split(/[.!?]/).filter(s => s.length > 30);\n\n// Target: 7 External, 3 Internal (Total 10)\nconst TARGET_EXTERNAL = 7;\nconst TARGET_INTERNAL = 3;\n\nfor (const sentence of sentences) {\n  if (opportunities.length >= (TARGET_EXTERNAL + TARGET_INTERNAL)) break;\n  \n  let type = null;\n  let patternMatch = null;\n  let internalKeyword = '';\n\n  // Check for External Opportunity (Max 7)\n  if (externalCount < TARGET_EXTERNAL) {\n    for (const pattern of externalPatterns) {\n      if (pattern.test(sentence)) {\n        type = 'external';\n        patternMatch = pattern;\n        break;\n      }\n    }\n  }\n\n  // Check for Internal Opportunity (Max 3) if not already found as external\n  if (!type && internalCount < TARGET_INTERNAL) {\n    for (const pattern of internalPatterns) {\n      if (pattern.test(sentence)) {\n        type = 'internal';\n        patternMatch = pattern;\n        // Capture the specific word matched (e.g., 'عسل') to use as a precise search tag\n        const match = sentence.match(pattern);\n        internalKeyword = match ? match[0] : 'عسل';\n        break;\n      }\n    }\n  }\n\n  if (type) {\n    let keywords = '';\n    let section = headers[Math.floor(opportunities.length / 2)] || 'General';\n    let finalKeywords = '';\n\n    if (type === 'internal') {\n        // For internal links, search for the specific product/term found\n        keywords = internalKeyword;\n        finalKeywords = internalKeyword; // Keep it simple: 'site:zarinhoney.com عسل'\n    } else {\n        // For external links, extract context from sentence\n        const coreContent = sentence.replace(patternMatch, '').trim();\n        keywords = coreContent\n          .replace(/[^\\u0600-\\u06FF\\s]/g, '')\n          .split(/\\s+/)\n          .filter(w => w.length > 3)\n          .slice(0, 5)\n          .join(' ');\n        \n        // Combine section and keywords for better relevance\n        finalKeywords = section !== 'General' ? `${section} ${keywords}` : keywords;\n    }\n\n    opportunities.push({\n      index: opportunities.length,\n      type: type,\n      claim: sentence.trim(),\n      keywords_fa: finalKeywords,\n      keywords_en: '', \n      section: section\n    });\n    \n    if (type === 'external') externalCount++;\n    else internalCount++;\n  }\n}\n\n// Fallback Filling\nwhile (opportunities.length < (TARGET_EXTERNAL + TARGET_INTERNAL)) {\n  // Prefer filling external first, then internal\n  const type = externalCount < TARGET_EXTERNAL ? 'external' : 'internal';\n  let header = headers[opportunities.length % headers.length] || 'عسل طبیعی';\n  let keywords = header;\n\n  if (type === 'internal') {\n      // Force a highly relevant commercial keyword for internal fallback\n      keywords = 'خرید عسل طبیعی';\n  }\n\n  opportunities.push({\n    index: opportunities.length,\n    type: type,\n    claim: header,\n    keywords_fa: keywords,\n    keywords_en: '',\n    section: header\n  });\n  \n  if (type === 'external') externalCount++;\n  else internalCount++;\n}\n\nreturn {\n  json: {\n    opportunities: opportunities,\n    totalFound: opportunities.length,\n    originalContent: content,\n    originalTitle: title\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        272
+      ],
+      "name": "1️⃣ Analyze Content",
+      "id": "f535baa6-98b4-45cf-a86a-8770191d2ee1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 🌐 STEP 2: Translate Keywords to English\n// ============================================\n\nconst opportunities = $input.first().json.opportunities || [];\n\n// Persian to English keyword mapping for honey topics\nconst translationMap = {\n  'عسل': 'honey',\n  'خواص': 'properties benefits',\n  'درمانی': 'therapeutic medicinal',\n  'ضد باکتری': 'antibacterial antimicrobial',\n  'ضد التهاب': 'anti-inflammatory',\n  'سیستم ایمنی': 'immune system',\n  'تقویت': 'boost strengthen',\n  'سلامت': 'health',\n  'پوست': 'skin',\n  'زخم': 'wound healing',\n  'سرماخوردگی': 'cold flu',\n  'گلو': 'throat',\n  'سرفه': 'cough',\n  'آنتی اکسیدان': 'antioxidant',\n  'ویتامین': 'vitamin',\n  'مواد مغذی': 'nutrients',\n  'قند': 'sugar glucose',\n  'طبیعی': 'natural raw',\n  'ارگانیک': 'organic',\n  'خالص': 'pure'\n};\n\nconst translatedOpportunities = opportunities.map(opp => {\n  let englishKeywords = [];\n  \n  // Translate each Persian word\n  const words = opp.keywords_fa.split(/\\s+/);\n  \n  for (const word of words) {\n    const translation = translationMap[word];\n    if (translation) {\n      englishKeywords.push(translation);\n    }\n  }\n  \n  // Default if no translation found\n  if (englishKeywords.length === 0) {\n    englishKeywords = ['honey', 'health', 'benefits'];\n  }\n  \n  return {\n    ...opp,\n    keywords_en: englishKeywords.join(' ')\n  };\n});\n\nreturn {\n  json: {\n    opportunities: translatedOpportunities,\n    readyForSearch: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        272
+      ],
+      "name": "2️⃣ Translate Keywords",
+      "id": "cd9b60dd-a835-43af-aa19-9e32caabdb13"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📊 STEP 3: Prepare Search Queries (Dynamic & Targeted)\n// ============================================\n\nconst items = $input.all();\nconst results = [];\n\n// Helper to process a single opportunity\nfunction processOpportunity(opp) {\n  const keywords = opp.keywords_fa || opp.keywords_en || '';\n  // Ensure keywords are safe for query\n  const cleanKeywords = keywords.replace(/[^\\u0600-\\u06FF\\s0-9]/g, ' ').trim();\n  \n  let query = '';\n  let targetDomain = '';\n  \n  // 🎯 Dynamic Search Strategy based on Type\n  if (opp.type === 'internal') {\n    // Internal: Search zarinhoney.com\n    query = `${cleanKeywords} site:zarinhoney.com`;\n    targetDomain = 'zarinhoney.com';\n  } else {\n    // External: Strictly validated Iranian domains\n    // Using OR operator for Google/Serper\n    query = `${cleanKeywords} (site:.gov.ir OR site:.ac.ir OR site:.org.ir)`;\n    targetDomain = 'iranian_validated';\n  }\n  \n  return {\n    json: {\n      ...opp,\n      searchQuery: query,\n      targetDomain: targetDomain,\n      searchType: opp.type || 'external'\n    }\n  };\n}\n\nfor (const item of items) {\n  const data = item.json;\n  \n  if (data.opportunities && Array.isArray(data.opportunities)) {\n    // Case 1: Array of opportunities in one item\n    for (const opp of data.opportunities) {\n      results.push(processOpportunity(opp));\n    }\n  } else if (data.claim || data.keywords_fa) {\n    // Case 2: Single opportunity item\n    results.push(processOpportunity(data));\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        272
+      ],
+      "name": "3️⃣ Prepare Query",
+      "id": "b18ac3ca-24e0-4a84-a201-4155068b357f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "cd72fd749594bb4eb991cf53373909630534475e"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.searchQuery }}"
+            },
+            {
+              "name": "gl",
+              "value": "ir"
+            },
+            {
+              "name": "hl",
+              "value": "fa"
+            },
+            {
+              "name": "num",
+              "value": "10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1600,
+        272
+      ],
+      "name": "4️⃣ Search with Serper",
+      "id": "84819312-fc46-4a1b-82cf-845254bc8e3c",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all AI responses (input items)\nconst aiResponses = $input.all();\n// Get all original items from the Split node\nconst allItems = $('Split for Anchor').all();\nconst results = [];\n\n// Loop through each AI response\nfor (let i = 0; i < aiResponses.length; i++) {\n  const aiResponse = aiResponses[i].json;\n  let anchorText = '';\n\n  // Extract anchor text from AI response\n  if (aiResponse.choices && aiResponse.choices[0]) {\n    anchorText = aiResponse.choices[0].message.content.trim();\n  }\n\n  // Get the corresponding original link data using the index\n  // This works because the order of execution is preserved\n  const originalLink = allItems[i]?.json || {link: '', title: 'مطالعه علمی', domain: '', index: 0, snippet: '', claim: '', section: ''};\n\n  // Fallback if anchor is empty or too short\n  if (!anchorText || anchorText.length < 5) {\n    anchorText = originalLink.title?.substring(0, 50) || 'مطالعه علمی';\n  }\n\n  // Push the combined result\n  results.push({\n    json: {\n      url: originalLink.link,\n      anchor: anchorText,\n      domain: originalLink.domain,\n      index: originalLink.index,\n      title: originalLink.title,\n      snippet: originalLink.snippet,\n      claim: originalLink.claim,\n      section: originalLink.section\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        544
+      ],
+      "name": "Extract Anchor",
+      "id": "46f00faa-7730-4b25-9368-2c8bd2332392"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📝 STEP 11: Prepare Final Links\n// ============================================\n\nconst items = $input.all();\n\nconst finalLinks = items.map((item, idx) => {\n  const data = item.json;\n  \n  return {\n    index: idx,\n    url: data.url,\n    anchor: data.anchor,\n    domain: data.domain,\n    section: data.section,\n    claim: data.claim\n  };\n});\n\nreturn {\n  json: {\n    links: finalLinks,\n    totalLinks: finalLinks.length,\n    readyForInsertion: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        576
+      ],
+      "name": "1️⃣1️⃣ Final Links",
+      "id": "79eda59b-6e9a-4a31-a135-b3edbb908492"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📊 STEP 9: Collect Valid Links\n// ============================================\n\nconst items = $input.all();\nconst validLinks = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  if (data.foundLink && data.foundTitle) {\n    validLinks.push({\n      title: data.foundTitle,\n      link: data.foundLink,\n      snippet: data.foundSnippet,\n      originalClaim: data.claim,\n      keywords: data.keywords_fa,\n      section: data.section,\n      sourceType: data.sourceType,\n      domainScore: data.domainScore\n    });\n  }\n}\n\nreturn {\n  json: {\n    validLinks: validLinks,\n    count: validLinks.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        576
+      ],
+      "name": "9️⃣ Collect Links1",
+      "id": "bf373850-8d94-4627-adee-1c27c935521f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📊 STEP 5: Extract Best URL (Smart Filtering)\n// ============================================\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const organic = data.organic || [];\n  \n  // 🔍 Robust Context Recovery\n  // If data.searchType is missing (due to HTTP node replacing output), infer from query\n  const query = data.searchParameters?.q || '';\n  let isInternal = data.searchType === 'internal';\n  \n  if (!data.searchType && query) {\n    if (query.includes('site:zarinhoney.com')) {\n      isInternal = true;\n    }\n  }\n\n  // Recover keywords for relevance scoring if missing\n  let keywordsString = data.keywords_fa || '';\n  if (!keywordsString && query) {\n     // Strip site operators and parens to get raw keywords\n     keywordsString = query.replace(/site:\\S+/g, '').replace(/[()]/g, '').trim();\n  }\n\n  let bestResult = null;\n  let bestScore = -1000;\n  \n  // 🧠 Scoring Algorithm\n  for (const result of organic) {\n    let score = 0;\n    const link = result.link || '';\n    const title = result.title || '';\n    const linkLower = link.toLowerCase();\n    \n    if (isInternal) {\n        // Strict check for zarinhoney.com\n        if (linkLower.includes('zarinhoney.com')) {\n            score += 100;\n        } else {\n            score = -1000; // Reject non-internal\n        }\n    } else {\n        // External Logic: STRICTLY enforce .gov.ir, .ac.ir, .org.ir\n        if (linkLower.includes('.gov.ir')) score += 100;\n        else if (linkLower.includes('.ac.ir')) score += 100;\n        else if (linkLower.includes('.org.ir')) score += 100;\n        else score -= 1000; // REJECT everything else\n    }\n    \n    // Relevance check (secondary to domain)\n    if (keywordsString) {\n        const keywords = keywordsString.split(' ');\n        let matchCount = 0;\n        for(const word of keywords) {\n            if (word.length > 2 && title.includes(word)) matchCount++;\n        }\n        score += matchCount * 2;\n    }\n    \n    // Penalize PDF/Doc\n    if (linkLower.endsWith('.pdf') || linkLower.endsWith('.doc')) score -= 50;\n\n    // Select the winner\n    if (score > bestScore) {\n      bestScore = score;\n      bestResult = result;\n    }\n  }\n  \n  // Threshold check: Must be a positive score (meaning matched domain criteria)\n  if (bestResult && bestScore > 0) {\n    results.push({\n      json: {\n        ...data, // Keep original metadata\n        foundTitle: bestResult.title,\n        foundLink: bestResult.link,\n        foundSnippet: bestResult.snippet,\n        domainScore: bestScore,\n        sourceType: isInternal ? 'Internal' : 'Validated_External',\n        // Restore inferred metadata if missing\n        searchType: isInternal ? 'internal' : 'external',\n        keywords_fa: keywordsString\n      }\n    });\n  } else if (isInternal) {\n      // FALLBACK for Internal: If no specific page found, link to Shop or Home\n      // This ensures we always have the internal links even if search fails\n      results.push({\n          json: {\n              ...data,\n              foundTitle: 'خرید بهترین عسل طبیعی و ارگانیک | زرین عسل',\n              foundLink: 'https://zarinhoney.com/shop/',\n              foundSnippet: 'خرید آنلاین عسل طبیعی و محصولات ارگانیک زنبور عسل با ضمانت کیفیت از زرین عسل.',\n              domainScore: 50, // Lower score but accepted\n              sourceType: 'Internal_Fallback',\n              searchType: 'internal'\n          }\n      });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        272
+      ],
+      "name": "5️⃣ Extract URL",
+      "id": "6839a385-8411-49a6-989a-fb40949fa5e8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gapgpt.app/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"شما یک نویسنده حرفه‌ای محتوای فارسی هستید که تخصص در تولید مقالات بلند و جامع درباره عسل و محصولات طبیعی دارید. قوانین:\\n- حداقل 1,500 کلمه\\n- لحن: صمیمی اما حرفه‌ای\\n- خروجی: فقط Markdown\\n- بدون لینک\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Topic: {{ $json.title }}\\n\\nWrite ONLY the **Main Body** of the article following these requirements (Do NOT write an Introduction, Hook, Conclusion, or CTA):\\n\\n**Word Count:** Minimum 1,500 words\\n\\n**Structure:**\\n- At least 5 major sections (## headings)\\n- Each section: 300+ words minimum\\n- Use ### for subsections\\n- Include:\\n  * Real-world examples\\n  * Research findings (source names only, no links)\\n  * Practical actionable tips\\n  * Statistics where relevant\\n\\n**Formatting:**\\n- Short paragraphs (2-4 sentences)\\n- Bullet/numbered lists\\n- Bold important points\\n- 1-2 emojis per section (optional)\\n\\n**CRITICAL:** If word count falls below 1,500, expand sections with more details, examples, or subtopics. Do NOT include any introductory or concluding remarks. Do NOT Mention Prices\"\n    }\n  ],\n  \"max_tokens\": 8000,\n  \"temperature\": 0.75\n}",
+        "options": {}
+      },
+      "id": "dd816c3a-1dff-41d4-8cab-01a0d6942324",
+      "name": "📝 Generate Blog Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1088,
+        48
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "2ndLew2FVyeHDwOJ",
+          "name": "OpenAi GapGpt"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// Split validLinks array into individual items\n// ============================================\n\nconst data = $input.first().json;\nconst validLinks = data.validLinks || [];\n\nif (validLinks.length === 0) {\n  throw new Error('❌ No valid links to process');\n}\n\nconsole.log(`📤 Splitting ${validLinks.length} links for anchor generation`);\n\nreturn validLinks.map(link => ({\n  json: link\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        576
+      ],
+      "name": "Split for Anchor",
+      "id": "6233e2ef-3995-4c8a-865c-1ee890ff69f6"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gapgpt.app/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert at creating natural, clickable Persian anchor text for scientific links. Make them descriptive (4-8 words) and enticing.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Create Persian anchor text for this link:\\n\\nURL: \" + $json.url + \"\\nTitle: \" + $json.title + \"\\nSnippet: \" + $json.snippet + \"\\nContext: \" + $json.claim + \"\\nSection: \" + $json.section + \"\\n\\nRules:\\n- 4-8 words in Persian\\n- Must relate to BOTH the link content AND the content section\\n- Descriptive and natural\\n- Makes user want to click\\n- No generic text like 'اینجا کلیک کنید'\\n- Anchor should bridge the section topic with the link's scientific content\\n\\nOutput ONLY the anchor text, nothing else.\"\n    }\n  ],\n  \"max_tokens\": 100,\n  \"temperature\": 0.8\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1248,
+        576
+      ],
+      "name": "🔟 Generate Anchor",
+      "id": "fea36890-cd05-458f-8644-4dbd67861e3e",
+      "credentials": {
+        "openAiApi": {
+          "id": "2ndLew2FVyeHDwOJ",
+          "name": "OpenAi GapGpt"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "path": "0678ff29-194a-47a0-9e06-3ea5136a4242",
+        "responseMode": "lastNode",
+        "responseData": "noData",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        48
+      ],
+      "webhookId": "0678ff29-194a-47a0-9e06-3ea5136a4242",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "http-response",
+      "name": "HTTP Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2160,
+        576
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -112
+      ],
+      "id": "2e07d786-7d0e-4b09-b72b-aa4677d04705",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "10-0iaJd56ry9WGCCfr-vVZtTtj8Y4RDGUUuqgkx8_sA",
+          "mode": "list",
+          "cachedResultName": "Titles",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10-0iaJd56ry9WGCCfr-vVZtTtj8Y4RDGUUuqgkx8_sA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "_rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10-0iaJd56ry9WGCCfr-vVZtTtj8Y4RDGUUuqgkx8_sA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        48
+      ],
+      "id": "a252fd15-bc07-4297-a0a2-d673cc6a3a47",
+      "name": "📚 خواندن عنوان از گوگل شیت",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FDrsxl4xgPiaosdj",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "title",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3c712d9e-0100-4ea3-bcf6-7774f4a07d49",
+      "name": "Extract Title Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// گرفتن همه آیتم‌ها\nconst items = $input.all();\n\n// ساخت آرایه‌ای از همه عناوین\nconst titles = items.map(item => item.json.title);\n\n// انتخاب یک عنوانِ تصادفی\nconst randomIndex = Math.floor(Math.random() * titles.length);\nconst chosenTitle = titles[randomIndex];\n\n// بازگرداندن فقط یک آیتم\nreturn [\n  {\n    json: {\n      title: chosenTitle\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        48
+      ],
+      "id": "722fc89f-96af-4443-94f0-34cb5416add4",
+      "name": "🎲 Random Title Selector"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// 📝 STEP 12: Finalize Content with Anchors\n// ============================================\n\n// Get the original content from the first node\nconst originalContent = $('1️⃣ Analyze Content').first().json.originalContent;\n\n// Get the links from the previous node\nconst links = $input.first().json.links || [];\n\nlet finalContent = originalContent;\n\n// Helper to escape RegExp special characters\nfunction escapeRegExp(string) {\n  return string.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); // $& means the whole matched string\n}\n\n// Iterate through links and insert them into the content\nfor (const link of links) {\n  const claim = link.claim;\n  const anchor = link.anchor;\n  const url = link.url;\n  \n  // Check if we have all necessary parts and if the claim exists in the content\n  if (claim && anchor && url) {\n    // Create the markdown link\n    // We append the link to the claim (sentence)\n    const linkElement = ` [${anchor}](${url})`;\n    \n    // Use Regex with negative lookahead to avoid re-linking the same instance\n    // We look for the claim NOT followed by \" [\"\n    try {\n        const regex = new RegExp(escapeRegExp(claim) + \"(?!\\\\s*\\\\[)\");\n        if (regex.test(finalContent)) {\n            finalContent = finalContent.replace(regex, claim + linkElement);\n        }\n    } catch (e) {\n        // Fallback to simple replace if regex fails (unlikely)\n        if (finalContent.includes(claim)) {\n             finalContent = finalContent.replace(claim, claim + linkElement);\n        }\n    }\n  }\n}\n\nreturn {\n  json: {\n    finalContent: finalContent,\n    originalContent: originalContent,\n    linksApplied: links.length\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        576
+      ],
+      "name": "📝 Finalize Content",
+      "id": "1a09037b-76a8-413a-a171-247a12395e86"
+    }
+  ],
+  "connections": {
+    "1️⃣ Analyze Content": {
+      "main": [
+        [
+          {
+            "node": "2️⃣ Translate Keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2️⃣ Translate Keywords": {
+      "main": [
+        [
+          {
+            "node": "3️⃣ Prepare Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3️⃣ Prepare Query": {
+      "main": [
+        [
+          {
+            "node": "4️⃣ Search with Serper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4️⃣ Search with Serper": {
+      "main": [
+        [
+          {
+            "node": "5️⃣ Extract URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Anchor": {
+      "main": [
+        [
+          {
+            "node": "1️⃣1️⃣ Final Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1️⃣1️⃣ Final Links": {
+      "main": [
+        [
+          {
+            "node": "📝 Finalize Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9️⃣ Collect Links1": {
+      "main": [
+        [
+          {
+            "node": "Split for Anchor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5️⃣ Extract URL": {
+      "main": [
+        [
+          {
+            "node": "9️⃣ Collect Links1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Generate Blog Content": {
+      "main": [
+        [
+          {
+            "node": "1️⃣ Analyze Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split for Anchor": {
+      "main": [
+        [
+          {
+            "node": "🔟 Generate Anchor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔟 Generate Anchor": {
+      "main": [
+        [
+          {
+            "node": "Extract Anchor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "📚 خواندن عنوان از گوگل شیت",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "📚 خواندن عنوان از گوگل شیت",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📚 خواندن عنوان از گوگل شیت": {
+      "main": [
+        [
+          {
+            "node": "Extract Title Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Title Data": {
+      "main": [
+        [
+          {
+            "node": "🎲 Random Title Selector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎲 Random Title Selector": {
+      "main": [
+        [
+          {
+            "node": "📝 Generate Blog Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Finalize Content": {
+      "main": [
+        [
+          {
+            "node": "HTTP Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}
