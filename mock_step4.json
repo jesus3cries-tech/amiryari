@@ -1,0 +1,44 @@
+[
+  {
+    "searchParameters": {
+      "q": "causes of dandruff scientific (site:.gov.ir OR site:.ac.ir OR site:.org.ir)",
+      "gl": "ir",
+      "hl": "fa",
+      "num": 10,
+      "type": "search",
+      "engine": "google"
+    },
+    "organic": [
+      {
+        "title": "علل شوره سر و درمان آن - دانشگاه علوم پزشکی تهران",
+        "link": "https://tum.ac.ir/news/dandruff-causes",
+        "snippet": "شوره سر به دلایل مختلفی از جمله خشکی پوست و قارچ مالاسزیا ایجاد می شود...",
+        "position": 1
+      },
+      {
+        "title": "مقاله نامرتبط ولی با دامین درست",
+        "link": "https://bad-link.ac.ir/stuff.pdf",
+        "snippet": "PDF file content...",
+        "position": 2
+      }
+    ]
+  },
+  {
+    "searchParameters": {
+      "q": "site:zarinhoney.com عسل طبیعی",
+      "gl": "ir",
+      "hl": "fa",
+      "num": 10,
+      "type": "search",
+      "engine": "google"
+    },
+    "organic": [
+      {
+        "title": "خرید عسل طبیعی - زرین عسل",
+        "link": "https://zarinhoney.com/product/natural-honey",
+        "snippet": "بهترین عسل طبیعی را از زرین عسل بخواهید...",
+        "position": 1
+      }
+    ]
+  }
+]
