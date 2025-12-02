@@ -1,0 +1,171 @@
+
+{
+  "name": "Instagram Scraper to Email",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "actorId": "apify/instagram-scraper",
+        "input": {
+          "hashtags": [
+            "عشق",
+            "محبت",
+            "جیگر",
+            "جذب",
+            "جاذبه",
+            "جذاب",
+            "قرار"
+          ],
+          "resultsLimit": 100
+        }
+      },
+      "name": "Apify Instagram Scraper",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_APIFY_CREDENTIALS_ID",
+          "name": "Apify credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{$json.timestamp}}",
+              "operation": "after",
+              "value2": "{{$now.minus('days', 7).toISO()}}"
+            }
+          ]
+        }
+      },
+      "name": "Filter Last Week",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "field": "likesCount",
+        "direction": "DESC"
+      },
+      "name": "Sort by Likes",
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const items = $input.all();\nlet emailBody = '<h1>Top Instagram Posts from Last Week</h1>';\nfor (let i = 0; i < Math.min(items.length, 5); i++) {\n  const item = items[i].json;\n  emailBody += `\n    <div>\n      <h2><a href=\"${item.url}\">${item.ownerUsername}</a></h2>\n      <img src=\"${item.displayUrl}\" width=\"300\">\n      <p>${item.caption}</p>\n      <p>Likes: ${item.likesCount}</p>\n      <p>Comments: ${item.commentsCount}</p>\n    </div>\n  `;\n}\nreturn [{json: {html: emailBody}}];"
+      },
+      "name": "Format Email",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "to": "your_email@example.com",
+        "subject": "Top Instagram Posts of the Week",
+        "html": "={{$node[\"Format Email\"].json[\"html\"]}}"
+      },
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIALS_ID",
+          "name": "SMTP credentials"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Apify Instagram Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify Instagram Scraper": {
+      "main": [
+        [
+          {
+            "node": "Filter Last Week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Last Week": {
+      "main": [
+        [
+          {
+            "node": "Sort by Likes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort by Likes": {
+      "main": [
+        [
+          {
+            "node": "Format Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1"
+}
