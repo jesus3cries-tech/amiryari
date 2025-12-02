@@ -1,0 +1,20 @@
+{
+  "name": "FAQ Writer Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. INPUT EXTRACTION\n// We extract the content from the previous node\nconst inputItem = $input.first();\nconst json = inputItem.json;\n\n// Robust extraction for both nested API response and flattened n8n keys\nlet fullContent = \"\";\nif (json[\"choices[0].message.content\"]) {\n    fullContent = json[\"choices[0].message.content\"];\n} else if (json.choices?.[0]?.message?.content) {\n    fullContent = json.choices[0].message.content;\n} else if (json.content) {\n    fullContent = json.content; // Fallback for simple structure\n} else {\n    fullContent = \"\";\n}\n\n// 2. CONTENT PROCESSING\n// Extract Title (H1 or H2)\nconst titleMatch = fullContent.match(/^#{1,2}\\s+(.+)/m);\nconst articleTitle = titleMatch ? titleMatch[1].trim() : (json.originalTitle || \"موضوع مقاله\");\n\n// Extract First 300 Words for Context (User Requirement)\n// We remove the title line to avoid repetition, then take the first 300 words.\nlet textBody = fullContent;\nif (titleMatch) {\n    // Remove the title line from the body text to get clean content\n    textBody = fullContent.replace(titleMatch[0], \"\").trim();\n}\n\n// Normalize whitespace and split by words\nconst words = textBody.split(/\\s+/);\nconst contextPreview = words.slice(0, 300).join(\" \");\n\n// 3. PROMPT CONSTRUCTION\nconst systemPrompt = `تو یک نویسنده حرفه‌ای محتوای فارسی هستی که تخصص در تولید بخش سوالات متداول (FAQ) جامع برای مقالات درباره عسل و محصولات طبیعی داری.\n\n🎯 **وظایف:**\n1. استخراج دقیقاً ۴ تا ۶ سوال متداول (نه کمتر، نه بیشتر) که خوانندگان ممکن است بپرسند\n2. ارائه پاسخ‌های واضح، مختصر و عملی (۵۰-۱۰۰ کلمه هر پاسخ)\n3. استفاده از زبان ساده و لحن گفتگویی\n\n⚠️ **قوانین سخت‌گیرانه:**\n- خروجی فقط Markdown\n- تعداد سوالات باید بین ۴ تا ۶ مورد باشد\n- بدون لینک\n- لحن صمیمی اما حرفه‌ای\n- سوالات باید طبیعی و جستجوگر باشند\n- پاسخ‌ها باید مستقیم و قابل اقدام باشند\n- شامل ۱-۲ مثال مرتبط در پاسخ‌ها`;\n\nconst userPrompt = `Analyze the following Persian article and create a comprehensive FAQ section.\n\nARTICLE TOPIC: ${articleTitle}\n\nARTICLE CONTENT (Context):\n\"${contextPreview}...\"\n---\n\nINSTRUCTIONS:\n1. Extract EXACTLY 4 to 6 most common questions readers would ask about this topic.\n2. DO NOT generate fewer than 4 or more than 6 questions.\n3. Provide clear, concise answers (50-100 words each).\n4. Use simple language and conversational tone.\n5. Include diverse question types:\n   - \"چیست\" (What is)\n   - \"چگونه\" (How to)\n   - \"چرا\" (Why)\n   - \"چه زمانی\" (When)\n   - Comparison questions\n   - Troubleshooting questions\n\nOUTPUT FORMAT:\nUse this exact Markdown structure in Persian:\n\n## سوالات متداول (FAQ)\n\n### ❓ [Question 1]\n[Answer in 50-100 words]\n\n### ❓ [Question 2]\n[Answer in 50-100 words]\n\n[Continue for 4-6 questions...]\n\nREQUIREMENTS:\n- Write entirely in Persian\n- Use emoji ❓ before each question\n- Make questions sound natural (how people actually search)\n- Answers must be direct and actionable\n- Include 1-2 relevant examples in answers`;\n\n// 4. OUTPUT\nreturn [{\n  json: {\n    originalTitle: articleTitle,\n    requestBody: {\n      model: \"gpt-4o-mini\",\n      messages: [\n        {\n role: \"system\", content: systemPrompt },\n        { role: \"user\", content: userPrompt }\n      ],\n      max_tokens: 1200, \n      temperature: 0.7\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        -2304
+      ],
+      "id": "e8439404-e5b0-4bb1-add3-3894ee4d0cc6",
+      "name": "🔧 Prepare FAQ Prompt"
+    }
+  ],
+  "connections": {},
+  "pinData": {}
+}

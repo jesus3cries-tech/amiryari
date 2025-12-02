@@ -1,0 +1,20 @@
+{
+  "name": "Conclusion Writer Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. INPUT EXTRACTION\n// We extract the content from the previous node\nconst inputItem = $input.first();\nconst json = inputItem.json;\n\n// Robust extraction for both nested API response and flattened n8n keys\nlet fullContent = \"\";\nif (json[\"choices[0].message.content\"]) {\n    fullContent = json[\"choices[0].message.content\"];\n} else if (json.choices?.[0]?.message?.content) {\n    fullContent = json.choices[0].message.content;\n} else if (json.content) {\n    fullContent = json.content; // Fallback for simple structure\n} else {\n    // Fail fast if content is missing\n    throw new Error('❌ No article content found in input');\n}\n\n// 2. CONTENT PROCESSING\n// Extract Title (H1 or H2)\nconst titleMatch = fullContent.match(/^#{1,2}\\s+(.+)/m);\nconst articleTitle = titleMatch ? titleMatch[1].trim() : (json.originalTitle || \"عنوان مشخص نشده\");\n\n// Extract Main Points (H2 headings) for the Recap\nconst headings = [...fullContent.matchAll(/##\\s+(.+)/g)].map(m => m[1].trim());\nconst mainPoints = headings.length > 0 \n  ? headings.slice(0, 5).map((h, i) => `${i + 1}. ${h}`).join('\\n')\n  : \"نکات اصلی مقاله\"; // Fallback if no subheaders found\n\n// Extract First 300 Words for Context (User Requirement)\nlet textBody = fullContent;\nif (titleMatch) {\n    // Remove the title line from the body text\n    textBody = fullContent.replace(titleMatch[0], \"\").trim();\n}\n// Normalize whitespace and split by words\nconst words = textBody.split(/\\s+/);\nconst contextPreview = words.slice(0, 300).join(\" \");\n\n\n// 3. PROMPT CONSTRUCTION\nconst systemPrompt = `You are a conversion copywriter specializing in creating powerful conclusions and calls‑to‑action for Persian content.\nYour expertise is in motivating readers to take action while maintaining a friendly, encouraging tone.`;\n\nconst userPrompt = `\nCreate a powerful conclusion with an engaging Call‑to‑Action for this Persian article.\n\nARTICLE TOPIC: ${articleTitle}\n\nMAIN POINTS (Headings):\n${mainPoints}\n\nCONTEXT (First ~300 words):\n\"${contextPreview}...\"\n\n---\n\nINSTRUCTIONS:\nWrite a conclusion (150‑200 words) with this structure:\n\n**PART 1: QUICK RECAP (50‑70 words)**\nSummarize key takeaways in bullet points based on the Main Points and Context:\n- \"✅ [نکته اول]\"\n- \"✅ [نکته دوم]\"\n- \"✅ [نکته سوم]\"\nUse 3‑5 bullets maximum.\n\n**PART 2: EMPOWERMENT MESSAGE (30‑50 words)**\nBoost reader confidence:\n- Acknowledge the journey: \"حالا که این اطلاعات را دارید...\"\n- Reinforce capability: \"شما می‌توانید...\"\n- Create urgency (if appropriate): \"بهترین زمان برای شروع همین الان است\"\n\n**PART 3: CLEAR CALL‑TO‑ACTION (40‑60 words)**\nInclude ONE primary action (choose the most relevant):\n1. **Comment/Engagement**: \"تجربه شما چیست؟ در کامنت‌ها بنویسید...\"\n2. **Share**: \"این مطلب را با دوستانتان به اشتراک بگذارید...\"\n3. **Next Step**: \"قدم بعدی: [specific action]\"\n4. **Question**: End with an engaging question to prompt discussion\n\n**PART 4: WARM CLOSING (1 sentence)**\n- Friendly sign‑off: \"موفق باشید! ✨\"\n\n---\n\nOUTPUT REQUIREMENTS:\n- Write in Persian/Farsi\n- Use encouraging, friendly tone\n- Include 2‑3 relevant emojis (✅ 💡 🚀 ⭐ 🎯)\n- Total length: 150‑200 words\n\nAVOID:\n- Starting with \"نتیجه گیری\"\n- Generic endings like \"امیدواریم مفید بود\"\n- Multiple CTAs (confusing)\n- Pushy sales language\n`;\n\n// 4. OUTPUT\nreturn [{\n  json: {\n    originalTitle: articleTitle,\n    requestBody: {\n      model: 'gpt-4o-mini',\n      messages: [\n        { role: 'system', content: systemPrompt },\n        { role: 'user',   content: userPrompt }\n      ],\n      max_tokens: 600,\n      temperature: 0.95\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -2304
+      ],
+      "id": "c9284904-e5b0-4cc2-bdd4-3894ee4d0ee8",
+      "name": "🔧 Prepare Conclusion Prompt"
+    }
+  ],
+  "connections": {},
+  "pinData": {}
+}
