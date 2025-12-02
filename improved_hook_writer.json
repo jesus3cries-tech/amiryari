@@ -1,0 +1,67 @@
+{
+  "name": "Improved Hook Writer Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. INPUT EXTRACTION\n// We extract the content from the previous node (assumed to be an API response with choices[0].message.content)\nconst inputItem = $input.first();\nconst fullContent = inputItem.json.choices?.[0]?.message?.content || \"\";\n\n// Extract Title (Line starting with #)\n// This regex looks for the first markdown header level 1\nconst titleMatch = fullContent.match(/^#\\s+(.+)/m);\nconst articleTitle = titleMatch ? titleMatch[1] : \"موضوع مقاله\";\n\n// Extract Current Intro (Between ## مقدمه and next ##)\n// This captures the draft text to give context to the AI\nconst introMatch = fullContent.match(/##\\s+مقدمه\\s+([\\s\\S]*?)(?=##|$)/);\nconst currentIntro = introMatch ? introMatch[1].trim() : \"\";\n\n// 2. RANDOMIZATION CONFIGURATION\n// We define multiple dimensions of variation to ensure uniqueness across 10+ daily outputs.\n\nconst hookTypes = [\n  {\n    id: \"misconception\",\n    name: \"The Myth Buster\",\n    instruction: \"Identify a common misconception or 'lie' people believe about this topic. Start by debunking it. 'Most people think X, but actually Y...'.\",\n    persian_hint: \"باور غلط را به چالش بکشید\"\n  },\n  {\n    id: \"story\",\n    name: \"The Micro-Story\",\n    instruction: \"Start with a short, relatable anecdotal scenario. 'Imagine you are...' or 'It happened yesterday...'. Put the reader in the scene immediately.\",\n    persian_hint: \"یک داستان کوتاه یا تصویرسازی ذهنی\"\n  },\n  {\n    id: \"statistic\",\n    name: \"The Shocking Stat\",\n    instruction: \"Cite a specific, surprising statistic or number (can be generalized if exact data is unknown, e.g., 'Over 80% of users...'). Use the number in the very first sentence.\",\n    persian_hint: \"آمار شوکه‌کننده\"\n  },\n  {\n    id: \"question\",\n    name: \"The Provocative Question\",\n    instruction: \"Ask a deep, rhetorical question that touches on the reader's hidden fear or desire. Not a simple 'Yes/No' question, but one that makes them stop scrolling.\",\n    persian_hint: \"سوال تفکربرانگیز\"\n  },\n  {\n    id: \"fear_missing_out\",\n    name: \"The FOMO/Secret\",\n    instruction: \"Imply there is a secret, hidden method, or 'unspoken rule' that others are using to succeed. 'The top 1% know this...'.\",\n    persian_hint: \"راز مخفی یا ترس از دست دادن\"\n  },\n  {\n    id: \"diagnosis\",\n    name: \"The Diagnosis\",\n    instruction: \"Describe a specific symptom or feeling the reader has. 'If you often feel tired after lunch, read this...'. Validate their pain.\",\n    persian_hint: \"تشخیص درد یا مشکل مخاطب\"\n  }\n];\n\nconst toneTypes = [\n  { \n    id: \"empathetic\", \n    name: \"Empathetic & Understanding\", \n    instruction: \"Use a warm, supportive tone. Use words like 'understand', 'feel', 'together'. Treat the reader like a close friend.\" \n  },\n  { \n    id: \"authoritative\", \n    name: \"Authoritative & Direct\", \n    instruction: \"Be confident, firm, and expert-like. No fluff. Get straight to the point. Act like a senior mentor.\" \n  },\n  { \n    id: \"energetic\", \n    name: \"High Energy & Enthusiastic\", \n    instruction: \"Use energetic verbs and convey genuine excitement about the solution. Make the reader feel pumped up.\" \n  },\n  { \n    id: \"curious\", \n    name: \"Mysterious & Intriguing\", \n    instruction: \"Hold back some information to build suspense. Use an open loop. Make them crave the answer.\" \n  }\n];\n\n// Pick random combination\nconst selectedHook = hookTypes[Math.floor(Math.random() * hookTypes.length)];\nconst selectedTone = toneTypes[Math.floor(Math.random() * toneTypes.length)];\n\n// 3. PROMPT CONSTRUCTION\n\nconst systemPrompt = `You are an expert Persian Content Strategist and Copywriter.\nYour task is to write a high-conversion introduction (Hook) for a blog post.\nYou must strictly follow the defined 'Hook Strategy' and 'Tone'.\nLanguage: Persian (Farsi).\nOutput Format: Plain text (Markdown allowed for bolding).\n`;\n\nconst userPrompt = `\n**TASK:** Rewrite the introduction for the following article to make it viral and engaging.\n\n**METADATA:**\n- **Topic:** ${articleTitle}\n- **Draft Content (Context):** ${currentIntro.substring(0, 400)}...\n\n**REQUIRED STYLE:**\n- **Hook Strategy:** ${selectedHook.name}\n  - *Instruction:* ${selectedHook.instruction}\n- **Tone:** ${selectedTone.name}\n  - *Instruction:* ${selectedTone.instruction}\n\n**STRUCTURE:**\n1. **The Hook (First 2 sentences):** Execute the '${selectedHook.name}' strategy perfectly. Grab attention instantly.\n2. **The Problem/Bridge:** Agitate the problem or bridge the hook to the main topic.\n3. **The Value Proposition:** Use bullet points (✅) to list 3 distinct things the reader will learn.\n4. **The Transition:** A compelling final sentence urging them to read on.\n\n**CONSTRAINTS:**\n- Write in natural, conversational Persian (avoid stiff 'ketabi' language).\n- Total length: 150-200 words.\n- Use **Bold** for the most impactful phrase in the hook.\n- Include 1 or 2 relevant emojis.\n- Do NOT label the sections (e.g. don't write \"Hook: ...\"). Just write the flowing text.\n\n**Generate the output now:**\n`;\n\n// 4. OUTPUT\n// We return the structured JSON for the HTTP Request node\nreturn [{\n  json: {\n    originalTitle: articleTitle,\n    generatedParams: {\n      strategy: selectedHook.name,\n      tone: selectedTone.name\n    },\n    requestBody: {\n      model: \"gpt-4o-mini\",\n      messages: [\n        { role: \"system\", content: systemPrompt },\n        { role: \"user\",   content: userPrompt }\n      ],\n      max_tokens: 800,\n      temperature: 0.85 // High enough for creativity/variety, low enough to follow the specific strategy\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -2304
+      ],
+      "id": "f5239404-e5b0-4bb1-add3-3894ee4d0bb5",
+      "name": "🔧 Prepare HOOK Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gapgpt.app/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "cbbe3c92-0ef3-4ca9-8ad0-4164fa8839f8",
+      "name": "Hook Writer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1168,
+        -2304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "2ndLew2FVyeHDwOJ",
+          "name": "OpenAi GapGpt"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "🔧 Prepare HOOK Prompt": {
+      "main": [
+        [
+          {
+            "node": "Hook Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hook Writer": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a3b33200d85273cf32397c419bb7fba0069b5927205b287adeee246758c78e70"
+  }
+}
