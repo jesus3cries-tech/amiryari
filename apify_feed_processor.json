@@ -1,0 +1,134 @@
+{
+  "name": "Apify Feed Processor",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "actorId": "apify/instagram-scraper",
+        "input": {
+          "hashtags": [],
+          "resultsLimit": 100
+        }
+      },
+      "id": "apify-scraper",
+      "name": "Apify Instagram Scraper",
+      "type": "n8n-nodes-base.apify",
+      "typeVersion": 1,
+      "position": [
+        450,
+        460
+      ],
+      "credentials": {
+        "apifyApi": {
+          "id": "YOUR_APIFY_CREDENTIALS_ID",
+          "name": "Apify credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "code",
+              "name": "Code",
+              "value": "={{ $json.shortCode }}",
+              "type": "string"
+            },
+            {
+              "id": "username",
+              "name": "Username",
+              "value": "={{ $json.ownerUsername }}",
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "name": "Caption",
+              "value": "={{ $json.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "Post URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "Image URL",
+              "value": "={{ $json.displayUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "video_url",
+              "name": "Video URL",
+              "value": "={{ $json.videoUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "like_count",
+              "name": "Likes",
+              "value": "={{ $json.likesCount }}",
+              "type": "number"
+            },
+            {
+              "id": "comment_count",
+              "name": "Comments",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "play_count",
+              "name": "Views",
+              "value": "={{ $json.videoPlayCount }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "success-output",
+      "name": "Success Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        700,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Apify Instagram Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apify Instagram Scraper": {
+      "main": [
+        [
+          {
+            "node": "Success Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
