@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 🧹 CLEAN DATA FOR AI\n// Remove biasing metadata (type, section, etc) to prevent AI from grouping links.\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n    const content = item.json.content;\n    const rawLinks = item.json.links || [];\n    \n    // Keep ONLY essential fields for the AI\n    const cleanLinks = rawLinks.map(link => ({\n        claim: link.claim,\n        anchor: link.anchor,\n        url: link.url\n    }));\n\n    results.push({\n        json: {\n            content,\n            links: cleanLinks\n        }\n    });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        880
+      ],
+      "id": "e7b8c9d0-1a2b-3c4d-5e6f-7g8h9i0j1k2l",
+      "name": "Sanitize Links"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the blog content and the list of links to insert.\n\n<content>\n{{ $json.content }}\n</content>\n\n<links>\n{{ JSON.stringify($json.links) }}\n</links>\n\nPlease inject these links exactly where they belong.",
+        "options": {
+          "systemMessage": "You are a precise Persian SEO Content Editor.\nYour ONLY task is to insert hyperlinks into the provided Markdown text.\n\n**CRITICAL RULES:**\n1. **NO FOOTERS:** Do NOT group links at the end of the document. Do NOT create a \"Sources\" section.\n2. **EXACT PLACEMENT:** You must insert each link *immediately* inside or after the sentence that matches the `claim`.\n3. **ALL LINKS:** Process every single link in the list. Do not skip any, and do not move \"internal\" links to the end.\n4. **PRESERVE TEXT:** Do not change the original text aside from adding the links.\n\n**Instructions:**\n- For each item in `<links>`:\n  1. Find the sentence in `<content>` that matches `claim`.\n  2. Insert `[anchor](url)` naturally into that sentence, or append it like `( [Anchor](URL) )` at the end of that specific sentence.\n- If a `claim` is in the middle of a paragraph, the link MUST go there, not at the end of the paragraph or article.\n\n**Output:**\nReturn ONLY the final Markdown content."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2800,
+        880
+      ],
+      "id": "b6008321-39c3-4ebc-8170-23f1cc975ae6",
+      "name": "Merge Links (Fixed)"
+    }
+  ],
+  "connections": {
+    "Sanitize Links": {
+      "main": [
+        [
+          {
+            "node": "Merge Links (Fixed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
