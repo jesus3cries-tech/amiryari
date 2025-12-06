@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 🧹 CLEAN DATA FOR AI\n// We prepare the data to be unambiguous for the AI.\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n    const content = item.json.content;\n    const rawLinks = item.json.links || [];\n    \n    // Sanitization: Keep only what's needed.\n    // Rename 'claim' to 'target_sentence_part' to guide the AI to find the container sentence.\n    const cleanLinks = rawLinks.map(link => ({\n        target_sentence_part: link.claim,\n        link_text: link.anchor,\n        url: link.url\n    }));\n\n    results.push({\n        json: {\n            content,\n            links: cleanLinks\n        }\n    });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        880
+      ],
+      "id": "e7b8c9d0-1a2b-3c4d-5e6f-7g8h9i0j1k2l",
+      "name": "Sanitize Links"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the blog content and the list of links to insert.\n\n<content>\n{{ $json.content }}\n</content>\n\n<links>\n{{ JSON.stringify($json.links) }}\n</links>\n\nPlease inject these links exactly according to the System Rules.",
+        "options": {
+          "systemMessage": "You are an expert SEO Content Editor for Persian (Farsi) articles.\nYour ONLY task is to insert hyperlinks into the provided Markdown text.\n\n**INPUT DATA:**\n- `content`: The blog post text.\n- `links`: A list of objects with `target_sentence_part`, `link_text`, and `url`.\n\n**STRICT RULES FOR LINK INSERTION:**\n1. **LOCATE:** For each link, find the full sentence in the content that contains the `target_sentence_part` text.\n2. **APPEND AT END:** Insert the link strictly at the **END** of that matched sentence.\n   - **Correct:** `This is the sentence text. ([Link Text](URL))`\n   - **Incorrect:** `This is ([Link Text](URL)) the sentence text.`\n3. **PERSIAN FORMAT:** Use a space before the parenthesis. Example: `جمله فارسی. ([متن لینک](آدرس))`\n4. **COMPLETENESS:** You MUST process every single link in the list. Do not skip any. If a sentence already has a link, append the new one next to it.\n5. **NO FOOTERS:** Do NOT create a 'Sources' or 'Links' section at the bottom. Links must be inline.\n6. **NO TEXT CHANGES:** Do not rewrite or summarize the original text. Only add the links.\n\n**Output:**\nReturn ONLY the final modified Markdown content."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2800,
+        880
+      ],
+      "id": "b6008321-39c3-4ebc-8170-23f1cc975ae6",
+      "name": "Merge Links (Fixed)"
+    }
+  ],
+  "connections": {
+    "Sanitize Links": {
+      "main": [
+        [
+          {
+            "node": "Merge Links (Fixed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
