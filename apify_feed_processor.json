@@ -1,0 +1,579 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "notice": ""
+      },
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        960
+      ],
+      "id": "f2f51b0c-acd7-4a9d-806b-876c31cf9099",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "preBuiltAgentsCalloutGmail": "",
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "amiryari.cc@gmail.com",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html_body }}",
+        "options": {}
+      },
+      "id": "e5aa4add-7303-4f94-a09c-77907f872704",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1632,
+        864
+      ],
+      "webhookId": "270df278-1578-4ecc-aed0-4b46f7759040",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TQfEAMii36o1IR2Z",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "preBuiltAgentsCalloutGoogleSheets": "",
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs",
+          "mode": "list",
+          "cachedResultName": "Viral Reels Archive",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit#gid=0"
+        },
+        "filtersUI": {},
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "ea68bbba-6df4-48db-b6eb-6230a2c4c43b",
+      "name": "Get Existing Archive",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        288,
+        960
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FDrsxl4xgPiaosdj",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "preBuiltAgentsCalloutGoogleSheets": "",
+        "authentication": "oAuth2",
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs",
+          "mode": "list",
+          "cachedResultName": "Viral Reels Archive",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Like": "={{ $json.Like }}",
+            "Caption": "={{ $json.Caption }}",
+            "VideoURL": "={{ $json.VideoURL }}",
+            "CM": "={{ $json.CM }}",
+            "Date": "={{ $json.Date }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Like",
+              "displayName": "Like",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CM",
+              "displayName": "CM",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "VideoURL",
+              "displayName": "VideoURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Caption",
+              "displayName": "Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8fc6f68e-2455-4a0c-839c-002c42450814",
+      "name": "Append to Archive",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1408,
+        672
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FDrsxl4xgPiaosdj",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const items = $input.all().map(i => i.json);\n\n// تابع جستجوی پیشرفته لینک (حتی اگر اسم کلید عجیب باشد)\nconst findLink = (item) => {\n  // 1. چک کردن کلیدهای استاندارد\n  if (item.VideoURL) return item.VideoURL;\n  if (item.videoUrl) return item.videoUrl;\n  if (item.postUrl) return item.postUrl;\n  if (item.url) return item.url;\n  if (item.link) return item.link;\n  if (item.canonicalUrl) return item.canonicalUrl;\n  \n  // 2. چک کردن کلیدهای شروع شونده با https (اگر کلید پیدا نشد)\n  for (const key in item) {\n    if (typeof item[key] === 'string' && item[key].startsWith('https://www.instagram.com/')) {\n      return item[key];\n    }\n  }\n  return null;\n};\n\nconst validItems = items.filter(item => {\n  const link = findLink(item);\n  // ذخیره لینک پیدا شده در خود آیتم برای استفاده‌های بعدی\n  if (link) item.finalLink = link; \n  return link && link.toString().trim() !== '';\n});\n\n// سورت کردن\nvalidItems.sort((a, b) => parseInt(b.Like || b.likeCount || 0) - parseInt(a.Like || a.likeCount || 0));\n\nconst top10 = validItems.slice(0, 10);\n\n// --- تولید HTML ---\nlet html = `<div style=\"font-family: Arial, sans-serif; direction: ltr;\">\n<h3 style=\"color:#E1306C\">نتایج یافت شده (${top10.length} مورد):</h3>\n<table style=\"width:100%; border-collapse:collapse;\">\n<thead><tr style=\"background:#eee\"><th style=\"padding:10px\">Post</th><th style=\"padding:10px\">Likes</th><th style=\"padding:10px\">Link</th></tr></thead><tbody>`;\n\nfor (const item of top10) {\n  const caption = (item.Caption || item.caption || item.text || '').substring(0, 50) + '...';\n  const likes = parseInt(item.Like || item.likeCount || 0).toLocaleString();\n  const hashtag = item.searchedHashtag || '';\n  \n  html += `\n  <tr style=\"border-bottom:1px solid #ddd\">\n    <td style=\"padding:10px\"><b>${caption}</b><br><span style=\"color:#888;font-size:12px\">${hashtag}</span></td>\n    <td style=\"padding:10px\"><b>${likes}</b></td>\n    <td style=\"padding:10px\"><a href=\"${item.finalLink}\" style=\"color:#fff; background:#0095f6; padding:5px 10px; text-decoration:none; border-radius:4px\">View</a></td>\n  </tr>`;\n}\nhtml += `</tbody></table></div>`;\n\nreturn [{\n  json: {\n    subject: `🚀 ۱۰ ریلز وایرال - ${new Date().toLocaleDateString()}`,\n    html_body: html,\n    count: top10.length,\n    debug_first_item: items[0] // برای اطمینان نمونه داده را هم در خروجی می‌گذاریم\n  }\n}];",
+        "notice": ""
+      },
+      "id": "fe5485f4-8a37-4e0b-9841-c4a445e666c2",
+      "name": "Format Email1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const allItems = $input.all();\nconst existingIds = new Set();\nconst newCandidates = [];\n\n// Helper to extract Instagram ShortCode\nfunction getShortCode(url) {\n    if (!url) return null;\n    // Match /p/CODE, /reel/CODE, /tv/CODE\n    // Normalize by splitting by ? to remove query params first\n    const cleanUrl = url.split('?')[0].replace(/\\/$/, '');\n    const parts = cleanUrl.split('/');\n    return parts[parts.length - 1];\n}\n\n// First pass: Archive items\nfor (const item of allItems) {\n    const json = item.json;\n    // Check for existing archive items (have VideoURL)\n    if (json.VideoURL && !json['Post URL']) {\n        const sc = getShortCode(json.VideoURL);\n        if (sc) existingIds.add(sc);\n    }\n    // Check for new items (have Post URL from Success Output)\n    else if (json['Post URL']) {\n        newCandidates.push(item);\n    }\n}\n\nconst uniqueItems = [];\n\n// Second pass: Filter new candidates\nfor (const item of newCandidates) {\n    const rawUrl = item.json['Post URL'];\n    const sc = getShortCode(rawUrl);\n    \n    // Uniqueness check: Must have a shortcode AND not be in existing set\n    if (sc && !existingIds.has(sc)) {\n        uniqueItems.push({\n            json: {\n                VideoURL: rawUrl,\n                Caption: item.json.Caption,\n                Like: item.json.Likes,\n                CM: item.json.Comments,\n                View: item.json.Views || 0,\n                Date: new Date().toISOString().split('T')[0],\n                searchedHashtag: item.json.searchedHashtag\n            }\n        });\n        // Add to set to prevent duplicates within the new batch itself\n        existingIds.add(sc);\n    }\n}\n\nreturn uniqueItems;",
+        "notice": ""
+      },
+      "id": "7d61f6e1-7304-4841-a2ef-a1cd002a5fa4",
+      "name": "Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        768
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      },
+      "id": "211c3be2-97d6-46bb-a5aa-94c1cc790b21",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        960,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "recentlyUsed",
+        "actorId": {
+          "__rl": true,
+          "value": "reGe1ST3OBgYZSsZJ",
+          "mode": "list",
+          "cachedResultName": "Instagram Hashtag Scraper (apify/instagram-hashtag-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/reGe1ST3OBgYZSsZJ/input"
+        },
+        "customBody": "{\n    \"hashtags\": [\n        \"relationshipcoach\",\n        \"relationshipproblems\",\n        \"attraction\",\n        \"datingtips\"\n    ],\n    \"keywordSearch\": true,\n    \"resultsLimit\": 50,\n    \"resultsType\": \"posts\"\n}",
+        "timeout": null,
+        "memory": 1024,
+        "build": "",
+        "authentication": "apifyApi"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        288,
+        576
+      ],
+      "id": "919e398c-e962-4c9a-a939-3da8a86bac90",
+      "name": "Run an Actor and get dataset",
+      "credentials": {
+        "apifyApi": {
+          "id": "8z3AOZZS0maZMePZ",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "code",
+              "name": "Code",
+              "value": "={{ $json.shortCode }}",
+              "type": "string"
+            },
+            {
+              "id": "username",
+              "name": "Username",
+              "value": "={{ $json.ownerUsername }}",
+              "type": "string"
+            },
+            {
+              "id": "caption",
+              "name": "Caption",
+              "value": "={{ $json.caption }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "Post URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "image_url",
+              "name": "Image URL",
+              "value": "={{ $json.displayUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "video_url",
+              "name": "Video URL",
+              "value": "={{ $json.videoUrl }}",
+              "type": "string"
+            },
+            {
+              "id": "like_count",
+              "name": "Likes",
+              "value": "={{ $json.likesCount }}",
+              "type": "number"
+            },
+            {
+              "id": "comment_count",
+              "name": "Comments",
+              "value": "={{ $json.commentsCount }}",
+              "type": "number"
+            },
+            {
+              "id": "play_count",
+              "name": "Views",
+              "value": "={{ $json.videoPlayCount }}",
+              "type": "number"
+            },
+            {
+              "id": "searchedHashtag",
+              "name": "searchedHashtag",
+              "value": "={{ $json.inputUrl.match(/q=([^&]+)/) ? $json.inputUrl.match(/q=([^&]+)/)[1] : '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "49bc96d2-ecb3-4b65-a4ec-95eb944f1edf",
+      "name": "Success Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b5c57b93-7b65-4bf9-8cb9-90c886bcaf57",
+              "leftValue": "={{ $json.timestamp }}",
+              "rightValue": "={{ $now.minus({days: 30}) }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        512,
+        672
+      ],
+      "id": "e6e55ae0-76fe-47ef-a8f8-a6eaf26144db",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "recentlyUsed",
+        "actorId": {
+          "__rl": true,
+          "value": "reGe1ST3OBgYZSsZJ",
+          "mode": "list",
+          "cachedResultName": "Instagram Hashtag Scraper (apify/instagram-hashtag-scraper)",
+          "cachedResultUrl": "https://console.apify.com/actors/reGe1ST3OBgYZSsZJ/input"
+        },
+        "customBody": "{\n    \"hashtags\": [\n        \"relationshipcoach\",\n        \"relationshipproblems\",\n        \"attraction\",\n        \"datingtips\"\n    ],\n    \"keywordSearch\": true,\n    \"resultsLimit\": 50,\n    \"resultsType\": \"reels\"\n}",
+        "timeout": null,
+        "memory": 1024,
+        "build": "",
+        "authentication": "apifyApi"
+      },
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        288,
+        768
+      ],
+      "id": "49dd1578-2539-4c93-8259-141ba1eb1ee1",
+      "name": "Run an Actor and get dataset1",
+      "credentials": {
+        "apifyApi": {
+          "id": "8z3AOZZS0maZMePZ",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "multipleMethods": false,
+        "httpMethod": "GET",
+        "path": "9e58b00a-bcda-456f-bdff-0f091a5f19ed",
+        "authentication": "none",
+        "responseMode": "onReceived",
+        "contentTypeNotice": "",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        576
+      ],
+      "id": "46a3225d-70b7-4398-a840-0b0407b432dc",
+      "name": "Webhook",
+      "webhookId": "9e58b00a-bcda-456f-bdff-0f091a5f19ed"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor and get dataset",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Existing Archive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run an Actor and get dataset1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Archive": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Deduplicate": {
+      "main": [
+        [
+          {
+            "node": "Append to Archive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Format Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Email1": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Archive": {
+      "main": [
+        []
+      ]
+    },
+    "Run an Actor and get dataset": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Output": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Success Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run an Actor and get dataset1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Run an Actor and get dataset",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Run an Actor and get dataset1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Existing Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "a3b33200d85273cf32397c419bb7fba0069b5927205b287adeee246758c78e70"
+  }
+}
