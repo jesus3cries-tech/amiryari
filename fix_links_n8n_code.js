@@ -1,30 +1,29 @@
 // =======================================================
-// 🔧 Fix Damaged Links Code Node (Corrected)
+// 🔧 Fix Damaged Links Code Node (Robust Version)
 // =======================================================
 // This node corrects URLs that may have been damaged by the AI link insertion node.
-// It finds the final text from "Merge Links & Content" and the correct link data
-// from "Sanitize Links" to produce a corrected output.
+// It uses the $items("Node Name") syntax to reliably fetch data from the correct
+// preceding nodes.
 // =======================================================
 
-// n8n combines multiple inputs into a single array of items.
-const allItems = $input.all();
+// 1. Directly reference the output from the two parent nodes by name.
+// This is the most reliable way to get data from multiple inputs in n8n.
+// Note: Ensure these names EXACTLY match the names of the nodes in your workflow.
+const mergedItems = $items("Merge Links & Content");
+const sanitizedItems = $items("Sanitize Links");
 
-// 1. Identify the two inputs based on their data structure.
-// This is robust and doesn't depend on the connection order.
-
-// Input from "Merge Links & Content" has an 'output' string property.
-const mergedItem = allItems.find(item => item.json.output && typeof item.json.output === 'string' && !item.json.links);
-
-// Input from "Sanitize Links" has a 'links' array property.
-const sanitizedItem = allItems.find(item => item.json.links && Array.isArray(item.json.links));
-
-// Error handling in case the inputs aren't connected correctly.
-if (!mergedItem) {
-  throw new Error("Could not find the input from 'Merge Links & Content'. It should have an 'output' property in its JSON.");
+// Error handling: Check if the nodes returned any data.
+// This can happen if a node is disconnected or has an error.
+if (mergedItems.length === 0) {
+  throw new Error("The 'Merge Links & Content' node did not return any data. Please check its connection and execution status.");
 }
-if (!sanitizedItem) {
-  throw new Error("Could not find the input from 'Sanitize Links'. It should have a 'links' array in its JSON.");
+if (sanitizedItems.length === 0) {
+  throw new Error("The 'Sanitize Links' node did not return any data. Please check its connection and execution status.");
 }
+
+// Since we expect each parent node to only output one item, we grab the first one.
+const mergedItem = mergedItems[0];
+const sanitizedItem = sanitizedItems[0];
 
 
 // 2. Extract the necessary data.
