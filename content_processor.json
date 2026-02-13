@@ -1,0 +1,322 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs",
+          "mode": "list",
+          "cachedResultName": "Viral Reels Archive",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "b493962b-0199-4dcd-bb7e-d5da1c597178",
+      "name": "Get Sheet Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        220,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FDrsxl4xgPiaosdj",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Filter rows that are NOT processed yet (PersianScript is empty)\nconst unprocessed = $input.all().filter(item => {\n  const script = item.json.PersianScript;\n  return !script || script.toString().trim() === '';\n});\n\n// 2. Sort by Likes (Highest first)\nunprocessed.sort((a, b) => {\n  const likeA = parseInt(a.json.Like || 0);\n  const likeB = parseInt(b.json.Like || 0);\n  return likeB - likeA;\n});\n\n// 3. Pick the top 1\nif (unprocessed.length > 0) {\n  return [unprocessed[0]];\n} else {\n  return []; // Stop if nothing to process\n}"
+      },
+      "id": "d764b70a-2268-40f6-9e48-7d9c1665d753",
+      "name": "Get Top 1 Unprocessed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor and get dataset",
+        "actorSource": "actorId",
+        "actorId": "apify/instagram-scraper",
+        "customBody": "={{ {\n  \"directUrls\": [$json.VideoURL],\n  \"resultsType\": \"details\",\n  \"resultsLimit\": 1\n} }}",
+        "options": {}
+      },
+      "id": "3f421a7b-8912-4c6e-9842-1234567890ab",
+      "name": "Get Video Download Link",
+      "type": "@apify/n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [
+        660,
+        300
+      ],
+      "credentials": {
+        "apifyApi": {
+          "id": "8z3AOZZS0maZMePZ",
+          "name": "Apify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.videoUrl }}",
+        "responseFormat": "file",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "2e337ac5-8975-4332-beaf-39fa30e102cf",
+      "name": "Download Video File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "fa"
+        }
+      },
+      "id": "a1b2c3d4-e5f6-4789-9012-34567890abcd",
+      "name": "Transcribe Audio",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "2ndLew2FVyeHDwOJ",
+          "name": "OpenAi GapGpt"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.gapgpt.app/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"gpt-4o-mini\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert Social Media Strategist. Analyze the video transcription and caption to create a viral Persian Reel script.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Original Caption: \" + $node[\"Get Top 1 Unprocessed\"].json.Caption + \"\\n\\nVideo Transcript: \" + $json.text + \"\\n\\nTask:\\n1. Extract the core message.\\n2. Write a highly engaging Persian script for a new Reel.\\n3. Output strictly valid JSON: { \\\"result_text\\\": \\\"YOUR_SCRIPT_HERE\\\" }\"\n    }\n  ],\n  \"response_format\": {\n    \"type\": \"json_object\"\n  },\n  \"max_tokens\": 2000,\n  \"temperature\": 0.7\n} }}",
+        "options": {}
+      },
+      "id": "d07c8408-62dd-4ab9-a1e5-3d7a43f303b2",
+      "name": "Generate Scenario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1320,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "2ndLew2FVyeHDwOJ",
+          "name": "OpenAi GapGpt"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "amiryari.cc@gmail.com",
+        "subject": "🎬 New Viral Script Generated",
+        "message": "={{ $json.result_text }}",
+        "options": {}
+      },
+      "id": "e5aa4add-7303-4f94-a09c-77907f872704",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TQfEAMii36o1IR2Z",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs",
+          "mode": "list",
+          "cachedResultName": "Viral Reels Archive",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15IMSfj9Dj9DaOlEDtTDHSlOc_OVN5u0YgGNBtDfmCxs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "PersianScript": "={{ $json.result_text }}",
+            "Status": "Done"
+          },
+          "matchingColumns": [
+            "VideoURL"
+          ],
+          "schema": [
+            {
+              "id": "VideoURL",
+              "displayName": "VideoURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PersianScript",
+              "displayName": "PersianScript",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "options": {}
+        },
+        "options": {}
+      },
+      "id": "a5b33134-edb6-40ee-b44b-bc98d6fca7d1",
+      "name": "Update Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1760,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FDrsxl4xgPiaosdj",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Get Sheet Data": {
+      "main": [
+        [
+          {
+            "node": "Get Top 1 Unprocessed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Top 1 Unprocessed": {
+      "main": [
+        [
+          {
+            "node": "Get Video Download Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video Download Link": {
+      "main": [
+        [
+          {
+            "node": "Download Video File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Audio": {
+      "main": [
+        [
+          {
+            "node": "Generate Scenario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Scenario": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "a3b33200d85273cf32397c419bb7fba0069b5927205b287adeee246758c78e70"
+  }
+}
